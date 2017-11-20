@@ -1,0 +1,53 @@
+-----code backup-----
+replenishment +start_URL
+
+import sys
+sys.path.append('../')
+import os
+import csv
+from scrapy.spiders import CrawlSpider,Rule
+from scrapy.selector import HtmlXPathSelector
+from items import ProdirectItem
+from scrapy.linkextractors import LinkExtractor
+# from urllib.parse import urljoin
+
+class ReplenishmentSpider(CrawlSpider):
+    name = 'pro_direct'
+    allowed_domains = ['prodirectrunning.com']
+    # filename = os.path.realpath('../utilities/bin/start_url/prodirect/start_URL.csv')
+
+    # def __init__(self, filename=None):
+    #     if filename:
+    #         with open(filename, 'r') as f:
+    #             self.start_urls = f.readlines()
+
+    start_url_file_path = os.path.realpath('../utilities/bin/start_url/prodirect/start_URL.csv')
+    with open(start_url_file_path,'r') as start_url_file:
+        csv_reader = csv.reader(start_url_file)
+        print csv_reader
+        next(csv_reader)
+        for url in csv_reader:
+            print url[0]
+    #start_urls = [urljoin(url) for url in open(start_url_file_path, 'r').readlines()]
+    start_urls = ['http://www.prodirectrunning.com/lists/mens-running-shoes.aspx',
+                  'http://www.prodirectrunning.com/lists/womens-running-shoes.aspx',
+                  'http://www.prodirectrunning.com/lists/juniors-running-shoes.aspx']
+
+    rules = [Rule(LinkExtractor(allow='/products/'), callback='parse_item', follow=False)]
+
+    def parse_item(self, response):
+        item = ProdirectItem()
+        hxs = HtmlXPathSelector(response)
+
+        # item ['product_name'] = hxs.select('//*[@id="content"]/div/div[3]/div[3]/div[1]/div[2]/a').extract()
+        # item['price'] = hxs.select('//*[@id="content"]/div/div[3]/div[3]/div[1]/div[2]/p').extract()
+        item['product_name'] = hxs.select('//*[@id="define-profile"]/h1/text()').extract()
+        item['description'] = hxs.select('//*[@id="content"]/div/div[4]/div[1]/div/div[2]/div[1]/text()').extract()
+        item['price'] =hxs.select('//*[@id="define-profile"]/p[3]/text()').extract()
+        item['image'] = hxs.xpath('//img/@src').extract_first(),
+        # item['product_image2']=hxs.select('//*[@id="content"]/div/div[2]/div/div/div/div/ul/li[3]/img').extract()
+        item['product_url'] = response.url
+
+        return item
+
+
